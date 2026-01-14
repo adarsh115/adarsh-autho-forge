@@ -29,4 +29,17 @@ public class KeyProperties {
      */
 //    @Value("${autho.forge.key.kid}") - using value with configuration is wrong
     private String kid;
+
+    /**
+     * Base64 encoded or raw content of the private key (optional, overrides path)
+     */
+    private String content;
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
 }

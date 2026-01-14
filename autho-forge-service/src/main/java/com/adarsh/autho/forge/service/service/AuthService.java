@@ -4,7 +4,7 @@ import com.adarsh.autho.forge.service.dto.LoginRequest;
 import com.adarsh.autho.forge.service.dto.RegisterRequest;
 import com.adarsh.autho.forge.service.dto.RegisterResponse;
 import com.adarsh.autho.forge.service.dto.TokenResponse;
-import com.adarsh.autho.forge.service.entity.User;
+import com.adarsh.autho.forge.service.entity.AuthUser;
 import com.adarsh.autho.forge.service.exception.InvalidCredentialsException;
 import com.adarsh.autho.forge.service.exception.UserCreationException;
 import com.adarsh.autho.forge.service.exception.UserNameAlreadyExistsException;
@@ -47,7 +47,7 @@ public class AuthService {
         //Hassing password using Bcrypt
         String hashPassword = passwordEncoder.encode(requestDto.getPassword());
 
-        User newUser = User.builder()
+        AuthUser newUser = AuthUser.builder()
                 .username(requestDto.getUsername())
                 .passwordHash(hashPassword)
                 .role(requestDto.getRoles())
@@ -69,9 +69,12 @@ public class AuthService {
         return response;
     }
 
+    @Autowired
+    private JwtTokenService jwtTokenService;
+
     public TokenResponse login(LoginRequest loginRequestDto){
-        //Optinal allows us to handle NPE
-        Optional<User> currentUser = userRepository.findByUsername(loginRequestDto.getUsername());
+        //Optional allows us to handle NPE
+        Optional<AuthUser> currentUser = userRepository.findByUsername(loginRequestDto.getUsername());
         if (currentUser.isEmpty()) {
             throw new InvalidCredentialsException("Invalid username or password");
         }
@@ -79,8 +82,18 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid username or password");
         }
 
-        // TODO: Implement token generation
-        throw new UnsupportedOperationException("Login not yet implemented");
+        // Generate access token
+        AuthUser user = currentUser.get();
+        String accessToken = jwtTokenService.generateAccessToken(user);
+        
+        // Build token response
+        TokenResponse response = TokenResponse.builder()
+                .accessToken(accessToken)
+                .tokenType("Bearer")
+                .expiresIn(15 * 60L) // 15 minutes in seconds
+                .build();
+        
+        return response;
     }
 
     public TokenResponse refresh(String refreshToken){
@@ -88,12 +101,12 @@ public class AuthService {
         throw new UnsupportedOperationException("Refresh not yet implemented");
     }
 
-    public TokenResponse generateAccessToken(User user){
-        // TODO: Implement access token generation
-        throw new UnsupportedOperationException("Access token generation not yet implemented");
+    public TokenResponse generateAccessToken(AuthUser user){
+        //  Deprecated - use jwtTokenService directly
+        throw new UnsupportedOperationException("Use jwtTokenService.generateAccessToken instead");
     }
 
-    public TokenResponse generateRefreshToken(User user){
+    public TokenResponse generateRefreshToken(AuthUser user){
         // TODO: Implement refresh token generation
         throw new UnsupportedOperationException("Refresh token generation not yet implemented");
     }

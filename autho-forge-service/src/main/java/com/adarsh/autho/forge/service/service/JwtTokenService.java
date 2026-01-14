@@ -1,6 +1,6 @@
 package com.adarsh.autho.forge.service.service;
 
-import com.adarsh.autho.forge.service.entity.User;
+import com.adarsh.autho.forge.service.entity.AuthUser;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -27,7 +27,7 @@ public class JwtTokenService {
     @Value("${autho.forge.access-token.ttl-minutes}")
     private long accessTokenTtlMinutes;
 
-    public String generateAccessToken(User user) {
+    public String generateAccessToken(AuthUser user) {
         //Build JWT claims/payload
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject(String.valueOf(user.getId()))
@@ -50,9 +50,14 @@ public class JwtTokenService {
         SignedJWT signedJWT = new SignedJWT(header, claims);
 
         //Sign using RSA private key
-        RSASSASigner signer = new RSASSASigner(keyProviderService.getPrivateKey());
+        try {
+            RSASSASigner signer = new RSASSASigner(keyProviderService.getPrivateKey());
+            signedJWT.sign(signer);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to sign JWT", e);
+        }
 
-        //Resturn token string
+        //Return token string
         return signedJWT.serialize();
     }
 

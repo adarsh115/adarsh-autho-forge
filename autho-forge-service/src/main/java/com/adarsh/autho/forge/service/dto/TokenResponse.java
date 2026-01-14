@@ -6,6 +6,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@lombok.Builder
+@lombok.NoArgsConstructor
+@lombok.AllArgsConstructor
 public class TokenResponse {
 
     @JsonProperty("access_token")

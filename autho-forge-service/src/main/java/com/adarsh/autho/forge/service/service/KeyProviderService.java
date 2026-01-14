@@ -43,22 +43,43 @@ public class KeyProviderService {
             // Ensure BouncyCastle is registered
             Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
-            Resource resource = resourceLoader.getResource(keyProperties.getPath());
-
             String pemContent;
-            try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
-                pemContent = FileCopyUtils.copyToString(reader);
+            
+            if (keyProperties.getContent() != null && !keyProperties.getContent().isBlank()) {
+                // Load from direct content (Env Var)
+                System.out.println("📝 Loading private key from configuration 'content' property...");
+                // Handle potential Base64 encoding if user provided it as such, but standard PEM string is fine too
+                // If it starts with "LS0t", it's likely Base64 encoded PEM
+                String raw = keyProperties.getContent().trim();
+                if (!raw.startsWith("-----")) {
+                     try {
+                         byte[] decoded = java.util.Base64.getDecoder().decode(raw);
+                         pemContent = new String(decoded, StandardCharsets.UTF_8);
+                     } catch (IllegalArgumentException e) {
+                         // Not base64, assume raw text
+                         pemContent = raw;
+                     }
+                } else {
+                    pemContent = raw;
+                }
+            } else {
+                // Fallback to file path
+                System.out.println("Rx Loading private key from file path: " + keyProperties.getPath());
+                Resource resource = resourceLoader.getResource(keyProperties.getPath());
+                try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+                    pemContent = FileCopyUtils.copyToString(reader);
+                }
             }
 
             this.privateKey = parsePrivateKey(pemContent);
             if (this.privateKey == null) {
-                throw new IllegalStateException("Failed to parse RSA private key from path: " + keyProperties.getPath());
+                throw new IllegalStateException("Failed to parse RSA private key (content or path)");
             }
 
             System.out.println("✔ RSA private key loaded successfully (kid=" + keyProperties.getKid() + ")");
 
         } catch (IOException | OperatorCreationException e) {
-            throw new IllegalStateException("Failed to load RSA private key from path: " + keyProperties.getPath(), e);
+            throw new IllegalStateException("Failed to load RSA private key", e);
         }
     }
 
@@ -125,5 +146,22 @@ public class KeyProviderService {
     }
     public String getKeyId() {
         return keyProperties.getKid();
+    }
+
+    public java.security.interfaces.RSAPublicKey getPublicKey() {
+        if (privateKey instanceof java.security.interfaces.RSAPrivateCrtKey) {
+            java.security.interfaces.RSAPrivateCrtKey crtKey = (java.security.interfaces.RSAPrivateCrtKey) privateKey;
+            try {
+                java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
+                java.security.spec.RSAPublicKeySpec publicKeySpec = new java.security.spec.RSAPublicKeySpec(
+                    crtKey.getModulus(),
+                    crtKey.getPublicExponent()
+                );
+                return (java.security.interfaces.RSAPublicKey) kf.generatePublic(publicKeySpec);
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to derive public key", e);
+            }
+        }
+        throw new IllegalStateException("Cannot derive public key: private key is not an RSAPrivateCrtKey");
     }
 }
