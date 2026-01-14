@@ -1,15 +1,21 @@
 # Build Stage
 FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
 WORKDIR /app
+
+# Copy parent POM
 COPY pom.xml .
-COPY src ./src
-# Skip tests to speed up build, assuming tests ran in CI
-RUN mvn clean package -DskipTests
+
+# Copy modules
+COPY autho-forge-service ./autho-forge-service
+COPY autho-forge-starter ./autho-forge-starter
+
+# Build the service module (and dependencies)
+RUN mvn clean package -pl autho-forge-service -am -DskipTests
 
 # Run Stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/autho-forge-service/target/*.jar app.jar
 
 # Expose port
 EXPOSE 8080
