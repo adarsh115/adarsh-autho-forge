@@ -79,14 +79,23 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid username or password");
         }
 
-
-
+        // TODO: Implement token generation
+        throw new UnsupportedOperationException("Login not yet implemented");
     }
 
-    public TokenResponse refresh(String refreshToken){}
+    public TokenResponse refresh(String refreshToken){
+        // TODO: Implement refresh token logic
+        throw new UnsupportedOperationException("Refresh not yet implemented");
+    }
 
-    public TokenResponse generateAccessToken(User user){}
+    public TokenResponse generateAccessToken(User user){
+        // TODO: Implement access token generation
+        throw new UnsupportedOperationException("Access token generation not yet implemented");
+    }
 
-    public TokenResponse generateRefreshToken(User user){}
+    public TokenResponse generateRefreshToken(User user){
+        // TODO: Implement refresh token generation
+        throw new UnsupportedOperationException("Refresh token generation not yet implemented");
+    }
 
 }
