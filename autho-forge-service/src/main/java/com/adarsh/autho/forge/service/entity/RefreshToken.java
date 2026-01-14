@@ -23,8 +23,7 @@ public class RefreshToken {
     @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     @Column(name = "refresh_token_hash", nullable = false, length = 255)
